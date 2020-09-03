@@ -6,16 +6,16 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.support.annotation.Nullable;
 import android.support.v7.widget.TintTypedArray;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Created by ruedy on 2018/3/8.
@@ -57,6 +57,11 @@ public class MarqueeView extends View implements Runnable {
 
     private float textHeight;
 
+    private List<ScrollTextWrap> scrollTextWrapList = new ArrayList<>();
+    private OnTextItemClickListener onTextItemClickListener;
+    private String BLANK_END;
+    private int BLANK_COUNT = 30;
+
 
     public MarqueeView(Context context) {
         this(context, null);
@@ -71,6 +76,7 @@ public class MarqueeView extends View implements Runnable {
         initattrs(attrs);
         initpaint();
         initClick();
+        initBlank(BLANK_COUNT);
     }
 
     private void initClick() {
@@ -119,6 +125,78 @@ public class MarqueeView extends View implements Runnable {
 
     }
 
+
+    public void setText(List<String> textList) {
+        if (textList == null || textList.size() <= 0) {
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        scrollTextWrapList.clear();
+        for (int i = 0; i < textList.size(); i++) {
+            String text = textList.get(i);
+            if (i != textList.size() - 1) {
+                text += BLANK_END;
+            }
+            ScrollTextWrap textWrap = new ScrollTextWrap();
+            textWrap.setIndex(i);
+            textWrap.setText(textList.get(i));
+            textWrap.setTextLength(paint.measureText(text));
+
+            scrollTextWrapList.add(textWrap);
+            sb.append(text);
+        }
+        setContent(sb.toString());
+    }
+
+    public void refreshTextWrap() {
+        for (int i = 0; i < scrollTextWrapList.size(); i++) {
+            ScrollTextWrap textWrap = scrollTextWrapList.get(i);
+            textWrap.setTextLength(paint.measureText(textWrap.getText() + BLANK_END));
+        }
+    }
+
+    public void initBlank(int count) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            sb.append(" ");
+        }
+        BLANK_END = sb.toString();
+    }
+
+    public ScrollTextWrap getClickTextWrap(float x) {
+        float xEnd = xLocation;
+        for (int i = 0; i < scrollTextWrapList.size(); i++) {
+            ScrollTextWrap textWrap = scrollTextWrapList.get(i);
+            if (i != scrollTextWrapList.size() - 1) {
+                xEnd += textWrap.getTextLength();
+            } else {
+                xEnd += getWidth();
+            }
+            if (x < xEnd) {
+                Log.d("----", "getClickTextWrap() called with: x = [" + x + "]"  + " xEnd = [" + xEnd + "]");
+                return textWrap;
+            }
+        }
+        Log.d("----", "getClickTextWrap() called with: x = [" + x + "]"  + " xEnd = [" + xEnd + "]");
+        return null;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (onTextItemClickListener != null && event.getAction() == MotionEvent.ACTION_DOWN) {
+            ScrollTextWrap clickTextWrap = getClickTextWrap(event.getX());
+            if (clickTextWrap != null) {
+                onTextItemClickListener.onClick(clickTextWrap.index, clickTextWrap.text);
+            }
+        }
+
+        return super.onTouchEvent(event);
+    }
+
+    public void setOnTextItemClickListener(OnTextItemClickListener onTextItemClickListener) {
+        this.onTextItemClickListener = onTextItemClickListener;
+    }
+
     public int dp2px(float dpValue) {
         final float scale = getResources().getDisplayMetrics().density;
         return (int) (dpValue * scale + 0.5f);
@@ -139,28 +217,15 @@ public class MarqueeView extends View implements Runnable {
 //            Log.e(TAG, "onMeasure: --- " + xLocation);
             resetInit = false;
         }
-
-
         //需要判断滚动模式的
         switch (repetType) {
-            case REPET_ONCETIME:
-
-                if (contentWidth < (-xLocation)) {
-                    //也就是说文字已经到头了
-//                    此时停止线程就可以了
-                    stopRoll();
-                }
-                break;
             case REPET_INTERVAL:
                 if (contentWidth <= (-xLocation)) {
                     //也就是说文字已经到头了
                     xLocation = getWidth();
                 }
                 break;
-
             case REPET_CONTINUOUS:
-
-
                 if (xLocation < 0) {
                     int beAppend = (int) ((-xLocation) / contentWidth);
 
@@ -175,7 +240,7 @@ public class MarqueeView extends View implements Runnable {
                 }
                 //此处需要判断的xLocation需要加上相应的宽度
                 break;
-
+            case REPET_ONCETIME:
             default:
                 //默认一次到头好了
                 if (contentWidth < (-xLocation)) {
@@ -456,5 +521,39 @@ public class MarqueeView extends View implements Runnable {
 
     public void appendContent(String appendContent) {
 //有兴趣的朋友可以自己完善，在现有的基础之上，静默追加新的 公告
+    }
+
+    private static class ScrollTextWrap {
+        private String text;
+        private float textLength;
+        private int index;
+
+        public int getIndex() {
+            return index;
+        }
+
+        public void setIndex(int index) {
+            this.index = index;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public void setText(String text) {
+            this.text = text;
+        }
+
+        public float getTextLength() {
+            return textLength;
+        }
+
+        public void setTextLength(float textLength) {
+            this.textLength = textLength;
+        }
+    }
+
+    public interface OnTextItemClickListener {
+        void onClick(int index, String text);
     }
 }

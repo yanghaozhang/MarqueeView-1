@@ -2,8 +2,10 @@ package com.marquee.dingrui.marqueeview;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.marquee.dingrui.marqueeviewlib.MarqueeView;
 
@@ -79,7 +81,11 @@ private List<String> list1=new ArrayList<String>() {
             @Override
             public void onClick(View v) {
                 mV.setContent(list1);
-                mV2.setContent(content2);
+                List<String> textList = new ArrayList<>();
+                for (int i = 0; i < 3; i++) {
+                    textList.add("kkkkkkkk" + i);
+                }
+                mV2.setText(textList);
                 mV3.setContent(content3);
             }
         });
@@ -111,6 +117,14 @@ private List<String> list1=new ArrayList<String>() {
         bt_control24 = ((Button) findViewById(R.id.bt_control24));
         bt_control4 = ((Button) findViewById(R.id.bt_control4));
         bt_control23 = ((Button) findViewById(R.id.bt_control23));
-        bt_control00  = ((Button) findViewById(R.id.bt_control00));
+        bt_control00 = ((Button) findViewById(R.id.bt_control00));
+
+        mV2.setOnTextItemClickListener(new MarqueeView.OnTextItemClickListener() {
+            @Override
+            public void onClick(int index, String text) {
+                Log.d("------", "onClick() called with: index = [" + index + "], text = [" + text + "]");
+                Toast.makeText(MainActivity.this, "click::" + index, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }
