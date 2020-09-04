@@ -167,9 +167,8 @@ public class MarqueeView extends View implements Runnable {
         float xEnd = xLocation;
         for (int i = 0; i < scrollTextWrapList.size(); i++) {
             ScrollTextWrap textWrap = scrollTextWrapList.get(i);
-            if (i != scrollTextWrapList.size() - 1) {
-                xEnd += textWrap.getTextLength();
-            } else {
+            xEnd += textWrap.getTextLength();
+            if (i == scrollTextWrapList.size() - 1) {
                 xEnd += getWidth();
             }
             if (x < xEnd) {
